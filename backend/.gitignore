@@ -1,0 +1,13 @@
+# Backend ignore patterns
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+vendor/
+.env
+uploads/
+*.log

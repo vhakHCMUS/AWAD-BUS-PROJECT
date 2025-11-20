@@ -1,0 +1,26 @@
+# Backend
+backend/uploads/
+backend/*.log
+backend/tmp/
+backend/.env
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# Database
+database/*.dump
+database/*.backup
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
