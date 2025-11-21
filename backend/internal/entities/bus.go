@@ -47,10 +47,11 @@ func (sl SeatLayout) Value() (driver.Value, error) {
 type Bus struct {
 	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	LicensePlate    string     `json:"license_plate" gorm:"uniqueIndex;not null"`
-	BusType         string     `json:"bus_type" gorm:"not null"` // "sleeper", "seater", "semi-sleeper"
+	BusType         string     `json:"bus_type" gorm:"not null"` // "sleeper", "seater", "semi-sleeper", "limousine"
 	Manufacturer    string     `json:"manufacturer"`
 	Model           string     `json:"model"`
 	Year            int        `json:"year"`
+	OperatorName    string     `json:"operator_name" gorm:"type:varchar(255)"` // Vietnamese bus operator name
 	SeatLayout      SeatLayout `json:"seat_layout" gorm:"type:jsonb;not null"`
 	Amenities       []string   `json:"amenities" gorm:"type:text[]"` // ["wifi", "ac", "charging"]
 	Status          BusStatus  `json:"status" gorm:"type:varchar(20);not null;default:'active'"`

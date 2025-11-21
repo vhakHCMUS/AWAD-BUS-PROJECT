@@ -44,7 +44,10 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: bus_booking_api
+    env_file:
+      - ./backend/.env
     environment:
+      # Override .env for Docker network
       - ENV=production
       - PORT=8080
       - DB_HOST=postgres
@@ -55,7 +58,7 @@ services:
       - DB_SSL_MODE=disable
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - JWT_SECRET=${JWT_SECRET:-your-super-secret-key}
+      - REDIS_PASSWORD=
       - SEAT_LOCK_DURATION=10m
       - BOOKING_EXPIRY=15m
       - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173

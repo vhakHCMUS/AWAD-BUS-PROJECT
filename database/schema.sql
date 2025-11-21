@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS buses (
     manufacturer VARCHAR(100),
     model VARCHAR(100),
     year INTEGER,
+    operator_name VARCHAR(255),
     seat_layout JSONB NOT NULL,
     amenities TEXT[],
     status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'maintenance', 'inactive')),

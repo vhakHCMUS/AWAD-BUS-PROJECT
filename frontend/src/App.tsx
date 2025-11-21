@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
+import { ChatbotWidget } from './components/ChatbotWidget'
 import HomePage from './pages/HomePage'
 import TripSearchPage from './pages/TripSearchPage'
 import TripDetailPage from './pages/TripDetailPage'
@@ -17,7 +18,9 @@ import NotFoundPage from './pages/NotFoundPage'
 
 function App() {
   return (
-    <Routes>
+    <>
+      <ChatbotWidget />
+      <Routes>
       {/* Public routes */}
       <Route path="/" element={<Layout />}>
         <Route index element={<HomePage />} />
@@ -63,6 +66,7 @@ function App() {
       {/* 404 */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
+    </>
   )
 }
 

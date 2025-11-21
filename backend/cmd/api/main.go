@@ -24,6 +24,8 @@ import (
 	"github.com/yourusername/bus-booking/internal/delivery/websocket"
 	"github.com/yourusername/bus-booking/internal/entities"
 	"github.com/yourusername/bus-booking/internal/infrastructure"
+	"github.com/yourusername/bus-booking/internal/infrastructure/chatbot"
+	"github.com/yourusername/bus-booking/internal/infrastructure/payment"
 	"github.com/yourusername/bus-booking/internal/repositories"
 	"github.com/yourusername/bus-booking/internal/repositories/cache"
 	"github.com/yourusername/bus-booking/internal/repositories/postgres"
@@ -177,7 +179,13 @@ type Container struct {
 	RedisCache  *cache.RedisCache
 
 	// Usecases
+	AuthUsecase    *usecases.AuthUsecase
 	BookingUsecase *usecases.BookingUsecase
+	PaymentUsecase *usecases.PaymentUsecase
+	ChatbotUsecase *usecases.ChatbotUsecase
+	TripUsecase    *usecases.TripUsecase
+	BusUsecase     *usecases.BusUsecase
+	RouteUsecase   *usecases.RouteUsecase
 
 	// Infrastructure
 	EmailService *infrastructure.EmailService
@@ -192,6 +200,8 @@ func initDependencies(db *gorm.DB, redisClient *redis.Client) *Container {
 	tripRepo := postgres.NewTripRepository(db)
 	paymentRepo := postgres.NewPaymentRepository(db)
 	ticketRepo := postgres.NewTicketRepository(db)
+	busRepo := postgres.NewBusRepository(db)
+	routeRepo := postgres.NewRouteRepository(db)
 
 	// Cache
 	redisCache := cache.NewRedisCache(redisClient)
@@ -200,9 +210,45 @@ func initDependencies(db *gorm.DB, redisClient *redis.Client) *Container {
 	emailService := infrastructure.NewEmailService()
 	pdfGenerator := infrastructure.NewPDFGenerator()
 
+	// Payment gateways
+	momoGateway := &payment.MoMoGateway{
+		PartnerCode: getEnv("MOMO_PARTNER_CODE", "MOMO_PARTNER"),
+		AccessKey:   getEnv("MOMO_ACCESS_KEY", "MOMO_ACCESS_KEY"),
+		SecretKey:   getEnv("MOMO_SECRET_KEY", "MOMO_SECRET_KEY"),
+		Endpoint:    getEnv("MOMO_ENDPOINT", "https://test-payment.momo.vn/v2/gateway/api/create"),
+		UseMock:     getEnv("PAYMENT_USE_MOCK", "true") == "true",
+	}
+
+	zalopayGateway := &payment.ZaloPayGateway{
+		AppID:    getEnv("ZALOPAY_APP_ID", "2553"),
+		Key1:     getEnv("ZALOPAY_KEY1", "ZALOPAY_KEY1"),
+		Key2:     getEnv("ZALOPAY_KEY2", "ZALOPAY_KEY2"),
+		Endpoint: getEnv("ZALOPAY_ENDPOINT", "https://sb-openapi.zalopay.vn/v2/create"),
+		UseMock:  getEnv("PAYMENT_USE_MOCK", "true") == "true",
+	}
+
+	payosGateway := &payment.PayOSGateway{
+		ClientID:    getEnv("PAYOS_CLIENT_ID", "PAYOS_CLIENT_ID"),
+		APIKey:      getEnv("PAYOS_API_KEY", "PAYOS_API_KEY"),
+		ChecksumKey: getEnv("PAYOS_CHECKSUM_KEY", "PAYOS_CHECKSUM_KEY"),
+		Endpoint:    getEnv("PAYOS_ENDPOINT", "https://api-merchant.payos.vn/v2/payment-requests"),
+		UseMock:     getEnv("PAYMENT_USE_MOCK", "true") == "true",
+	}
+
+	gateways := map[entities.PaymentGateway]payment.Gateway{
+		entities.PaymentGatewayMoMo:  momoGateway,
+		"zalopay":                    zalopayGateway,
+		entities.PaymentGatewayPayOS: payosGateway,
+	}
+
 	// Usecases
+	jwtSecret := getEnv("JWT_SECRET", "your-super-secret-jwt-key-change-this-in-production")
+	accessTokenExpiry, _ := time.ParseDuration(getEnv("JWT_ACCESS_EXPIRY", "15m"))
+	refreshTokenExpiry, _ := time.ParseDuration(getEnv("JWT_REFRESH_EXPIRY", "7d"))
 	seatLockDuration, _ := time.ParseDuration(getEnv("SEAT_LOCK_DURATION", "10m"))
 	bookingExpiry, _ := time.ParseDuration(getEnv("BOOKING_EXPIRY", "15m"))
+
+	authUsecase := usecases.NewAuthUsecase(userRepo, jwtSecret, accessTokenExpiry, refreshTokenExpiry)
 
 	bookingUsecase := usecases.NewBookingUsecase(
 		bookingRepo,
@@ -215,12 +261,33 @@ func initDependencies(db *gorm.DB, redisClient *redis.Client) *Container {
 		bookingExpiry,
 	)
 
+	paymentUsecase := usecases.NewPaymentUsecase(
+		paymentRepo,
+		bookingRepo,
+		gateways,
+	)
+
+	// Chatbot
+	bot := chatbot.NewMockChatbot(getEnv("CHATBOT_USE_MOCK", "true") == "true")
+	chatbotUsecase := usecases.NewChatbotUsecase(bot)
+
+	// Additional usecases
+	tripUsecase := usecases.NewTripUsecase(tripRepo, busRepo, routeRepo, seatRepo)
+	busUsecase := usecases.NewBusUsecase(busRepo)
+	routeUsecase := usecases.NewRouteUsecase(routeRepo)
+
 	return &Container{
 		UserRepo:       userRepo,
 		BookingRepo:    bookingRepo,
 		SeatRepo:       seatRepo,
 		RedisCache:     redisCache,
+		AuthUsecase:    authUsecase,
 		BookingUsecase: bookingUsecase,
+		PaymentUsecase: paymentUsecase,
+		ChatbotUsecase: chatbotUsecase,
+		TripUsecase:    tripUsecase,
+		BusUsecase:     busUsecase,
+		RouteUsecase:   routeUsecase,
 		EmailService:   emailService,
 		PDFGenerator:   pdfGenerator,
 	}
@@ -250,7 +317,7 @@ func setupRouter(container *Container) *gin.Engine {
 		// Public routes
 		auth := v1.Group("/auth")
 		{
-			authHandler := handlers.NewAuthHandler()
+			authHandler := handlers.NewAuthHandler(container.AuthUsecase)
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
 			auth.POST("/refresh", authHandler.RefreshToken)
@@ -263,7 +330,7 @@ func setupRouter(container *Container) *gin.Engine {
 		// Trip search (public)
 		trips := v1.Group("/trips")
 		{
-			tripHandler := handlers.NewTripHandler()
+			tripHandler := handlers.NewTripHandler(container.TripUsecase, container.BookingUsecase)
 			trips.GET("", tripHandler.Search)
 			trips.GET("/:id", tripHandler.GetByID)
 			trips.GET("/:id/seats", tripHandler.GetSeats)
@@ -286,9 +353,9 @@ func setupRouter(container *Container) *gin.Engine {
 			// Payments
 			payments := authorized.Group("/payments")
 			{
-				paymentHandler := handlers.NewPaymentHandler()
+				paymentHandler := handlers.NewPaymentHandler(container.PaymentUsecase)
 				payments.POST("", paymentHandler.CreatePayment)
-				payments.POST("/webhook", paymentHandler.Webhook)
+				payments.GET("/:id", paymentHandler.GetPaymentStatus)
 			}
 
 			// Tickets
@@ -300,6 +367,23 @@ func setupRouter(container *Container) *gin.Engine {
 			}
 		}
 
+		// Payment webhooks (no auth required)
+		webhooks := v1.Group("/webhooks")
+		{
+			paymentHandler := handlers.NewPaymentHandler(container.PaymentUsecase)
+			webhooks.POST("/momo", paymentHandler.WebhookMoMo)
+			webhooks.POST("/zalopay", paymentHandler.WebhookZaloPay)
+			webhooks.POST("/payos", paymentHandler.WebhookPayOS)
+		}
+
+		// Chatbot (public, no auth required)
+		chatbotGroup := v1.Group("/chatbot")
+		{
+			chatbotHandler := handlers.NewChatbotHandler(container.ChatbotUsecase)
+			chatbotGroup.POST("/message", chatbotHandler.SendMessage)
+			chatbotGroup.GET("/history", chatbotHandler.GetHistory)
+		}
+
 		// Admin routes
 		admin := v1.Group("/admin")
 		admin.Use(middleware.AuthMiddleware(), middleware.AdminMiddleware())
@@ -307,7 +391,7 @@ func setupRouter(container *Container) *gin.Engine {
 			// Bus management
 			buses := admin.Group("/buses")
 			{
-				busHandler := handlers.NewBusHandler()
+				busHandler := handlers.NewBusHandler(container.BusUsecase)
 				buses.POST("", busHandler.Create)
 				buses.GET("", busHandler.List)
 				buses.GET("/:id", busHandler.GetByID)
@@ -318,7 +402,7 @@ func setupRouter(container *Container) *gin.Engine {
 			// Route management
 			routes := admin.Group("/routes")
 			{
-				routeHandler := handlers.NewRouteHandler()
+				routeHandler := handlers.NewRouteHandler(container.RouteUsecase)
 				routes.POST("", routeHandler.Create)
 				routes.GET("", routeHandler.List)
 				routes.GET("/:id", routeHandler.GetByID)
@@ -329,7 +413,7 @@ func setupRouter(container *Container) *gin.Engine {
 			// Trip management
 			trips := admin.Group("/trips")
 			{
-				tripHandler := handlers.NewTripHandler()
+				tripHandler := handlers.NewTripHandler(container.TripUsecase, container.BookingUsecase)
 				trips.POST("", tripHandler.Create)
 				trips.PUT("/:id", tripHandler.Update)
 				trips.DELETE("/:id", tripHandler.Delete)

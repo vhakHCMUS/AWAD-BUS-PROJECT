@@ -111,14 +111,20 @@ func (h *BookingHandler) GetBooking(c *gin.Context) {
 // @Router /bookings [get]
 func (h *BookingHandler) GetUserBookings(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
-	userIDValue, exists := c.Get("userID")
+	userIDValue, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User not authenticated"})
 		return
 	}
 
-	userID, ok := userIDValue.(uuid.UUID)
+	userIDStr, ok := userIDValue.(string)
 	if !ok {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Invalid user ID format"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Invalid user ID"})
 		return
 	}
@@ -137,8 +143,8 @@ func (h *BookingHandler) GetUserBookings(c *gin.Context) {
 		}
 	}
 
-	bookings, err := h.usecase.GetUserBookings(c.Request.Context(), userID, page, limit)
-	if err != nil {
+	bookings, err2 := h.usecase.GetUserBookings(c.Request.Context(), userID, page, limit)
+	if err2 != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to retrieve bookings"})
 		return
 	}

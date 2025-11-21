@@ -4,12 +4,17 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/yourusername/bus-booking/internal/usecases"
 )
 
-type AuthHandler struct{}
+type AuthHandler struct {
+	authUsecase *usecases.AuthUsecase
+}
 
-func NewAuthHandler() *AuthHandler {
-	return &AuthHandler{}
+func NewAuthHandler(authUsecase *usecases.AuthUsecase) *AuthHandler {
+	return &AuthHandler{
+		authUsecase: authUsecase,
+	}
 }
 
 type RegisterRequest struct {
@@ -47,8 +52,22 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	// TODO: Implement registration logic
-	c.JSON(http.StatusCreated, gin.H{"message": "User registered successfully"})
+	tokens, err := h.authUsecase.Register(c.Request.Context(), usecases.RegisterInput{
+		Name:     req.Name,
+		Email:    req.Email,
+		Password: req.Password,
+		Phone:    req.Phone,
+	})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, AuthResponse{
+		AccessToken:  tokens.AccessToken,
+		RefreshToken: tokens.RefreshToken,
+		User:         tokens.User,
+	})
 }
 
 // Login godoc
@@ -68,8 +87,20 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// TODO: Implement login logic
-	c.JSON(http.StatusOK, gin.H{"message": "Login successful"})
+	tokens, err := h.authUsecase.Login(c.Request.Context(), usecases.LoginInput{
+		Email:    req.Email,
+		Password: req.Password,
+	})
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, AuthResponse{
+		AccessToken:  tokens.AccessToken,
+		RefreshToken: tokens.RefreshToken,
+		User:         tokens.User,
+	})
 }
 
 // RefreshToken godoc
@@ -78,12 +109,32 @@ func (h *AuthHandler) Login(c *gin.Context) {
 // @Tags auth
 // @Accept json
 // @Produce json
-// @Param refresh_token body string true "Refresh token"
+// @Param request body RefreshTokenRequest true "Refresh token"
 // @Success 200 {object} AuthResponse
 // @Failure 401 {object} ErrorResponse
 // @Router /auth/refresh [post]
 func (h *AuthHandler) RefreshToken(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "Token refreshed"})
+	var req RefreshTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	tokens, err := h.authUsecase.RefreshAccessToken(c.Request.Context(), req.RefreshToken)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, AuthResponse{
+		AccessToken:  tokens.AccessToken,
+		RefreshToken: tokens.RefreshToken,
+		User:         tokens.User,
+	})
+}
+
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
 }
 
 // GoogleLogin godoc

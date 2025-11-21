@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for Go backend
 
 # Stage 1: Builder
-FROM golang:1.23-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache git gcc musl-dev
@@ -10,10 +10,11 @@ RUN apk add --no-cache git gcc musl-dev
 WORKDIR /app
 
 # Copy go mod files
-COPY go.mod go.sum ./
+COPY go.mod ./
+COPY go.sum* ./
 
 # Download dependencies
-RUN go mod download
+RUN go mod download || go mod tidy
 
 # Copy source code
 COPY . .
