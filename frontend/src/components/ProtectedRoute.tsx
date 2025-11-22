@@ -13,9 +13,19 @@ export default function ProtectedRoute({ children, requireAdmin = false }: Prote
     return <Navigate to="/login" replace />
   }
 
-  // TODO: Implement proper role checking from JWT token
   if (requireAdmin) {
-    const userRole = localStorage.getItem('user_role') || 'passenger'
+    const userStr = localStorage.getItem('user')
+    let userRole = 'passenger'
+    
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr)
+        userRole = user.role || 'passenger'
+      } catch (e) {
+        console.error('Failed to parse user data:', e)
+      }
+    }
+    
     if (userRole !== 'admin') {
       return <Navigate to="/" replace />
     }

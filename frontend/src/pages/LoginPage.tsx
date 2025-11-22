@@ -129,16 +129,16 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="btn bg-primary-600 text-white hover:bg-primary-700 w-full disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn bg-primary-600 text-white hover:bg-primary-700 w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center px-6 py-3 font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
             >
               {loading ? (
                 <>
-                  <Loader2 className="inline h-5 w-5 mr-2 animate-spin" />
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                   Signing in...
                 </>
               ) : (
                 <>
-                  <LogIn className="inline h-5 w-5 mr-2" />
+                  <LogIn className="h-5 w-5 mr-2" />
                   Sign in
                 </>
               )}

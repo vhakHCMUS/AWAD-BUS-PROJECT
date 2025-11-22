@@ -90,16 +90,16 @@ export default function TripSearchPage() {
           <button
             type="submit"
             disabled={loading}
-            className="btn bg-primary-600 text-white hover:bg-primary-700 w-full md:w-auto disabled:opacity-50"
+            className="btn bg-primary-600 text-white hover:bg-primary-700 w-full md:w-auto disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center px-6 py-3 font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
           >
             {loading ? (
               <>
-                <Loader2 className="inline h-5 w-5 mr-2 animate-spin" />
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                 Searching...
               </>
             ) : (
               <>
-                <Search className="inline h-5 w-5 mr-2" />
+                <Search className="h-5 w-5 mr-2" />
                 Search Trips
               </>
             )}
@@ -183,7 +183,7 @@ export default function TripSearchPage() {
                   </div>
                   <button
                     onClick={() => navigate(`/trips/${trip.id}`)}
-                    className="btn bg-primary-600 text-white hover:bg-primary-700"
+                    className="btn bg-primary-600 text-white hover:bg-primary-700 px-6 py-2.5 font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 whitespace-nowrap"
                   >
                     Select Seats
                   </button>

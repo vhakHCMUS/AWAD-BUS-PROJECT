@@ -42,6 +42,11 @@ export default function TripDetailPage() {
   }
 
   const handleSeatSelect = (seatNumber: string) => {
+    const seat = seats.find(s => s.seat_number === seatNumber)
+    if (seat?.status === 'booked' || seat?.status === 'locked') {
+      return
+    }
+    
     setSelectedSeats((prev) =>
       prev.includes(seatNumber)
         ? prev.filter((s) => s !== seatNumber)
@@ -207,13 +212,13 @@ export default function TripDetailPage() {
             <h2 className="text-xl font-bold mb-4">Booking Details</h2>
 
             <div className="mb-4 p-4 bg-gray-50 rounded">
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-600">Selected Seats:</span>
+              <div className="mb-2">
+                <span className="text-gray-600 block mb-1">Selected Seats:</span>
                 <span className="font-medium">
                   {selectedSeats.length > 0 ? selectedSeats.join(', ') : 'None'}
                 </span>
               </div>
-              <div className="flex justify-between text-lg font-bold">
+              <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200">
                 <span>Total:</span>
                 <span className="text-primary-600">{totalPrice.toLocaleString('vi-VN')} VND</span>
               </div>
@@ -253,13 +258,19 @@ export default function TripDetailPage() {
               <button
                 type="submit"
                 disabled={selectedSeats.length === 0 || bookingLoading}
-                className="btn bg-primary-600 text-white hover:bg-primary-700 w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`btn w-full flex items-center justify-center px-6 py-3 font-semibold rounded-lg shadow-md transition-all duration-200 ${
+                  selectedSeats.length === 0 || bookingLoading
+                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                    : 'bg-primary-600 text-white hover:bg-primary-700 hover:shadow-lg'
+                }`}
               >
                 {bookingLoading ? (
                   <>
-                    <Loader2 className="inline h-5 w-5 mr-2 animate-spin" />
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                     Processing...
                   </>
+                ) : selectedSeats.length === 0 ? (
+                  'Select seats to continue'
                 ) : (
                   'Continue to Payment'
                 )}

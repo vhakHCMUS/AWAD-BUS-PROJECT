@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { adminTripsAPI, adminBusesAPI, adminRoutesAPI, tripsAPI, Trip, Bus, Route } from '../../lib/api'
 import { Plus, Edit, Trash2, Loader2 } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 export default function AdminTrips() {
   const [trips, setTrips] = useState<Trip[]>([])
@@ -53,29 +54,53 @@ export default function AdminTrips() {
     try {
       if (editingTrip) {
         await adminTripsAPI.update(editingTrip.id, formData)
-        alert('Trip updated successfully')
+        toast.success('Trip updated successfully!')
       } else {
         await adminTripsAPI.create(formData)
-        alert('Trip created successfully')
+        toast.success('Trip created successfully!')
       }
       setShowForm(false)
       setEditingTrip(null)
       resetForm()
       loadData()
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to save trip')
+      toast.error(error.response?.data?.error || 'Failed to save trip')
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this trip?')) return
-    try {
-      await adminTripsAPI.delete(id)
-      alert('Trip deleted successfully')
-      loadData()
-    } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to delete trip')
-    }
+    toast((t) => (
+      <div className="flex flex-col gap-3">
+        <p className="font-medium">Are you sure you want to delete this trip?</p>
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={() => {
+              toast.dismiss(t.id)
+            }}
+            className="px-3 py-1.5 text-sm bg-gray-200 hover:bg-gray-300 rounded-md transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id)
+              try {
+                await adminTripsAPI.delete(id)
+                toast.success('Trip deleted successfully!')
+                loadData()
+              } catch (error: any) {
+                toast.error(error.response?.data?.error || 'Failed to delete trip')
+              }
+            }}
+            className="px-3 py-1.5 text-sm bg-red-600 text-white hover:bg-red-700 rounded-md transition-colors"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    ), {
+      duration: 10000,
+    })
   }
 
   const handleEdit = (trip: Trip) => {
@@ -122,7 +147,7 @@ export default function AdminTrips() {
             setEditingTrip(null)
             setShowForm(true)
           }}
-          className="btn bg-primary-600 text-white hover:bg-primary-700"
+          className="btn bg-primary-600 text-white hover:bg-primary-700 flex items-center px-4 py-2 font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
         >
           <Plus className="h-5 w-5 mr-2" />
           Schedule Trip
@@ -225,8 +250,11 @@ export default function AdminTrips() {
                 />
               </div>
             </div>
-            <div className="flex gap-2">
-              <button type="submit" className="btn bg-primary-600 text-white hover:bg-primary-700">
+            <div className="flex gap-3">
+              <button 
+                type="submit" 
+                className="btn bg-primary-600 text-white hover:bg-primary-700 px-6 py-2.5 font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+              >
                 {editingTrip ? 'Update' : 'Create'}
               </button>
               <button
@@ -236,7 +264,7 @@ export default function AdminTrips() {
                   setEditingTrip(null)
                   resetForm()
                 }}
-                className="btn bg-gray-200 hover:bg-gray-300"
+                className="btn bg-gray-200 hover:bg-gray-300 px-6 py-2.5 font-semibold rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
               >
                 Cancel
               </button>

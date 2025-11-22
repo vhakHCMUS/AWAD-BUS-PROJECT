@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { adminBusesAPI, Bus } from '../../lib/api'
 import { Plus, Edit, Trash2, Loader2 } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 export default function AdminBuses() {
   const [buses, setBuses] = useState<Bus[]>([])
@@ -36,7 +37,7 @@ export default function AdminBuses() {
       setBuses(response.data.buses || [])
     } catch (error) {
       console.error('Failed to load buses:', error)
-      alert('Failed to load buses')
+      toast.error('Failed to load buses')
     } finally {
       setLoading(false)
     }
@@ -47,29 +48,53 @@ export default function AdminBuses() {
     try {
       if (editingBus) {
         await adminBusesAPI.update(editingBus.id, formData)
-        alert('Bus updated successfully')
+        toast.success('Bus updated successfully!')
       } else {
         await adminBusesAPI.create(formData)
-        alert('Bus created successfully')
+        toast.success('Bus created successfully!')
       }
       setShowForm(false)
       setEditingBus(null)
       resetForm()
       loadBuses()
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to save bus')
+      toast.error(error.response?.data?.error || 'Failed to save bus')
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this bus?')) return
-    try {
-      await adminBusesAPI.delete(id)
-      alert('Bus deleted successfully')
-      loadBuses()
-    } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to delete bus')
-    }
+    toast((t) => (
+      <div className="flex flex-col gap-3">
+        <p className="font-medium">Are you sure you want to delete this bus?</p>
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={() => {
+              toast.dismiss(t.id)
+            }}
+            className="px-3 py-1.5 text-sm bg-gray-200 hover:bg-gray-300 rounded-md transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id)
+              try {
+                await adminBusesAPI.delete(id)
+                toast.success('Bus deleted successfully!')
+                loadBuses()
+              } catch (error: any) {
+                toast.error(error.response?.data?.error || 'Failed to delete bus')
+              }
+            }}
+            className="px-3 py-1.5 text-sm bg-red-600 text-white hover:bg-red-700 rounded-md transition-colors"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    ), {
+      duration: 10000,
+    })
   }
 
   const handleEdit = (bus: Bus) => {
@@ -116,7 +141,7 @@ export default function AdminBuses() {
             setEditingBus(null)
             setShowForm(true)
           }}
-          className="btn bg-primary-600 text-white hover:bg-primary-700"
+          className="btn bg-primary-600 text-white hover:bg-primary-700 flex items-center px-4 py-2 font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
         >
           <Plus className="h-5 w-5 mr-2" />
           Add Bus
@@ -220,8 +245,11 @@ export default function AdminBuses() {
                 />
               </div>
             </div>
-            <div className="flex gap-2">
-              <button type="submit" className="btn bg-primary-600 text-white hover:bg-primary-700">
+            <div className="flex gap-3">
+              <button 
+                type="submit" 
+                className="btn bg-primary-600 text-white hover:bg-primary-700 px-6 py-2.5 font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
+              >
                 {editingBus ? 'Update' : 'Create'}
               </button>
               <button
@@ -231,7 +259,7 @@ export default function AdminBuses() {
                   setEditingBus(null)
                   resetForm()
                 }}
-                className="btn bg-gray-200 hover:bg-gray-300"
+                className="btn bg-gray-200 hover:bg-gray-300 px-6 py-2.5 font-semibold rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
               >
                 Cancel
               </button>

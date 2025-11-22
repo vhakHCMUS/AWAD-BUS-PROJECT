@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
+import { Toaster } from 'react-hot-toast'
 import Layout from './components/Layout'
 import { ChatbotWidget } from './components/ChatbotWidget'
 import HomePage from './pages/HomePage'
@@ -19,6 +20,7 @@ import NotFoundPage from './pages/NotFoundPage'
 function App() {
   return (
     <>
+      <Toaster position="top-right" />
       <ChatbotWidget />
       <Routes>
       {/* Public routes */}
@@ -28,6 +30,7 @@ function App() {
         <Route path="trips/:id" element={<TripDetailPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
+        <Route path="bookings/:id" element={<BookingPage />} />
         
         {/* Protected routes */}
         <Route
