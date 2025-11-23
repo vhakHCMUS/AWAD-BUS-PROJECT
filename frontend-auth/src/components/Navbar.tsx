@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom';
-import { Bus, LogOut } from 'lucide-react';
+import { Bus, LogOut, LayoutDashboard } from 'lucide-react';
+import { tokenManager } from '../lib/tokenManager';
 
 export default function Navbar() {
-  const isAuthenticated = !!localStorage.getItem('access_token');
+  const isAuthenticated = !!tokenManager.getAccessToken();
 
   const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    tokenManager.clearTokens();
     localStorage.removeItem('user');
     window.location.href = '/';
   };
@@ -25,13 +25,22 @@ export default function Navbar() {
 
           <div className="flex items-center gap-6">
             {isAuthenticated ? (
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 text-gray-700 hover:text-primary-600"
-              >
-                <LogOut className="h-4 w-4" />
-                Logout
-              </button>
+              <>
+                <Link
+                  to="/dashboard"
+                  className="flex items-center gap-2 text-gray-700 hover:text-primary-600"
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  Dashboard
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 text-gray-700 hover:text-primary-600"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </button>
+              </>
             ) : (
               <>
                 <Link
