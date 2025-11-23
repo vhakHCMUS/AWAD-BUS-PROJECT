@@ -1,17 +1,19 @@
 import axios from 'axios';
 import { API_URL } from '../config/constants';
+import { tokenManager } from './tokenManager';
 
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Important: send cookies automatically
 });
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
   config => {
-    const token = localStorage.getItem('access_token');
+    const token = tokenManager.getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -33,24 +35,22 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (!refreshToken) {
-          throw new Error('No refresh token');
-        }
-
-        const response = await axios.post(`${API_URL}/auth/refresh`, {
-          refresh_token: refreshToken,
-        });
+        // No need to get refresh token - it's sent automatically in cookies
+        // because we set withCredentials: true and server set it as HttpOnly
+        const response = await axios.post(
+          `${API_URL}/auth/refresh`,
+          {},
+          { withCredentials: true }
+        );
 
         const { access_token } = response.data;
-        localStorage.setItem('access_token', access_token);
+        tokenManager.setAccessToken(access_token);
 
         originalRequest.headers.Authorization = `Bearer ${access_token}`;
         return api(originalRequest);
       } catch (refreshError) {
         // Clear tokens and redirect to login
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
+        tokenManager.clearTokens();
         localStorage.removeItem('user');
         window.location.href = '/login';
         return Promise.reject(refreshError);

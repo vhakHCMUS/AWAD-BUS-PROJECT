@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AxiosError } from 'axios';
 import { authAPI } from '../lib/api';
+import { tokenManager } from '../lib/tokenManager';
 import { Loader2, Mail, Lock, LogIn } from 'lucide-react';
 
 export default function LoginPage() {
@@ -20,9 +21,8 @@ export default function LoginPage() {
       setLoading(true);
       const response = await authAPI.login(formData);
 
-      // Store tokens
-      localStorage.setItem('access_token', response.data.access_token);
-      localStorage.setItem('refresh_token', response.data.refresh_token);
+      // Store tokens - access token in memory, refresh token in httpOnly cookie (set by server)
+      tokenManager.setTokens(response.data.access_token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
 
       // Redirect to home and force refresh
