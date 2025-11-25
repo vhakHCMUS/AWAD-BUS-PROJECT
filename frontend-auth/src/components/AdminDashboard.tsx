@@ -1,22 +1,42 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Users, 
-  Bus, 
-  MapPin, 
   DollarSign, 
-  Settings, 
-  BarChart3, 
-  AlertTriangle,
   Shield,
   Database,
-  Activity
+  Activity,
+  RefreshCw
 } from 'lucide-react';
+import { adminSummaryCards, mockActivities } from '../lib/mockData';
 
 interface AdminDashboardProps {
   user: any;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
+  const [summaryData, setSummaryData] = useState(adminSummaryCards);
+  const [activities] = useState(mockActivities.slice(0, 6));
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedTab, setSelectedTab] = useState('overview');
+
+  // Simulate data refresh
+  const refreshData = async () => {
+    setIsLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Update some values randomly
+    const updatedData = summaryData.map(card => ({
+      ...card,
+      value: typeof card.value === 'number' 
+        ? Math.floor(card.value + Math.random() * 100 - 50)
+        : card.value,
+      change: card.change ? Math.random() * 20 - 10 : undefined
+    }));
+    
+    setSummaryData(updatedData);
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header */}
@@ -31,7 +51,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
               Welcome back, {user?.name || 'Administrator'} | System Management Portal
             </p>
           </div>
-          <div className="text-right">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={refreshData}
+              disabled={isLoading}
+              className="flex items-center gap-2 bg-red-700 hover:bg-red-800 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
             <div className="bg-red-700 px-4 py-2 rounded-lg">
               <span className="text-sm font-semibold">ADMIN ACCESS</span>
             </div>
@@ -41,122 +69,117 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm">Total Users</p>
-              <p className="text-2xl font-bold text-gray-900">1,234</p>
-            </div>
-            <Users className="h-8 w-8 text-blue-500" />
-          </div>
-        </div>
+        {summaryData.map((card) => {
+          const IconMap: { [key: string]: any } = {
+            'total-bookings': Users,
+            'revenue': DollarSign,
+            'active-users': Activity,
+            'system-status': Database
+          };
+          const IconComponent = IconMap[card.id] || Users;
+          const colorClasses = {
+            blue: 'border-blue-500 text-blue-500',
+            green: 'border-green-500 text-green-500',
+            orange: 'border-orange-500 text-orange-500',
+            red: 'border-red-500 text-red-500'
+          };
 
-        <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm">Active Buses</p>
-              <p className="text-2xl font-bold text-gray-900">45</p>
+          return (
+            <div key={card.id} className={`bg-white p-6 rounded-lg shadow-md border-l-4 ${colorClasses[card.color].split(' ')[0]}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm">{card.title}</p>
+                  <p className="text-2xl font-bold text-gray-900">{card.value}</p>
+                  {card.change && (
+                    <p className={`text-sm ${card.change > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {card.change > 0 ? '+' : ''}{card.change.toFixed(1)}%
+                    </p>
+                  )}
+                </div>
+                <IconComponent className={`h-8 w-8 ${colorClasses[card.color].split(' ')[1]}`} />
+              </div>
             </div>
-            <Bus className="h-8 w-8 text-green-500" />
-          </div>
-        </div>
+          );
+        })}
+      </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-yellow-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm">Routes</p>
-              <p className="text-2xl font-bold text-gray-900">28</p>
-            </div>
-            <MapPin className="h-8 w-8 text-yellow-500" />
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-md border-l-4 border-purple-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm">Monthly Revenue</p>
-              <p className="text-2xl font-bold text-gray-900">$45,230</p>
-            </div>
-            <DollarSign className="h-8 w-8 text-purple-500" />
-          </div>
+      {/* Tabs */}
+      <div className="mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            {['overview', 'users', 'buses', 'reports'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setSelectedTab(tab)}
+                className={`py-2 px-1 border-b-2 font-medium text-sm capitalize ${
+                  selectedTab === tab
+                    ? 'border-red-500 text-red-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </nav>
         </div>
       </div>
 
-      {/* Management Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* System Management */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Database className="h-6 w-6 text-red-600" />
-            System Management
-          </h2>
-          <div className="space-y-3">
-            <button className="w-full text-left p-3 bg-red-50 hover:bg-red-100 rounded-lg transition-colors">
-              <div className="font-semibold text-red-700">User Management</div>
-              <div className="text-sm text-red-600">Manage user accounts, roles, and permissions</div>
-            </button>
-            <button className="w-full text-left p-3 bg-red-50 hover:bg-red-100 rounded-lg transition-colors">
-              <div className="font-semibold text-red-700">Bus Fleet Management</div>
-              <div className="text-sm text-red-600">Add, edit, and monitor bus fleet status</div>
-            </button>
-            <button className="w-full text-left p-3 bg-red-50 hover:bg-red-100 rounded-lg transition-colors">
-              <div className="font-semibold text-red-700">Route Configuration</div>
-              <div className="text-sm text-red-600">Configure bus routes and schedules</div>
-            </button>
-          </div>
-        </div>
-
-        {/* Analytics */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-blue-600" />
-            Analytics & Reports
-          </h2>
-          <div className="space-y-3">
-            <button className="w-full text-left p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
-              <div className="font-semibold text-blue-700">Revenue Analytics</div>
-              <div className="text-sm text-blue-600">View detailed revenue reports and trends</div>
-            </button>
-            <button className="w-full text-left p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
-              <div className="font-semibold text-blue-700">Performance Metrics</div>
-              <div className="text-sm text-blue-600">Monitor system performance and usage</div>
-            </button>
-            <button className="w-full text-left p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
-              <div className="font-semibold text-blue-700">Customer Insights</div>
-              <div className="text-sm text-blue-600">Analyze customer behavior and satisfaction</div>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* System Alerts */}
+      {/* Recent Activities */}
       <div className="bg-white p-6 rounded-lg shadow-md">
         <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-          <AlertTriangle className="h-6 w-6 text-orange-600" />
-          System Alerts & Notifications
+          <Activity className="h-6 w-6 text-blue-600" />
+          Recent Activities
         </h2>
         <div className="space-y-3">
-          <div className="flex items-center p-3 bg-red-50 border-l-4 border-red-500 rounded">
-            <AlertTriangle className="h-5 w-5 text-red-500 mr-3" />
-            <div>
-              <div className="font-semibold text-red-700">Server Maintenance Required</div>
-              <div className="text-sm text-red-600">Scheduled maintenance window: Tonight 2:00-4:00 AM</div>
-            </div>
-          </div>
-          <div className="flex items-center p-3 bg-yellow-50 border-l-4 border-yellow-500 rounded">
-            <Activity className="h-5 w-5 text-yellow-500 mr-3" />
-            <div>
-              <div className="font-semibold text-yellow-700">High Traffic Alert</div>
-              <div className="text-sm text-yellow-600">Unusual booking activity detected on Route 15</div>
-            </div>
-          </div>
-          <div className="flex items-center p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
-            <Settings className="h-5 w-5 text-blue-500 mr-3" />
-            <div>
-              <div className="font-semibold text-blue-700">System Update Available</div>
-              <div className="text-sm text-blue-600">New features and security patches available</div>
-            </div>
-          </div>
+          {activities.map((activity) => {
+            const statusColors = {
+              success: 'bg-green-50 border-green-200 text-green-800',
+              pending: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+              failed: 'bg-red-50 border-red-200 text-red-800'
+            };
+            
+            const typeIcons = {
+              booking: '📅',
+              payment: '💰',
+              cancellation: '❌',
+              registration: '👤'
+            };
+
+            return (
+              <div
+                key={activity.id}
+                className={`p-4 rounded-lg border ${statusColors[activity.status]}`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3">
+                    <span className="text-lg">{typeIcons[activity.type]}</span>
+                    <div>
+                      <div className="font-semibold">{activity.description}</div>
+                      <div className="text-sm opacity-75">by {activity.user}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm">
+                      {activity.timestamp.toLocaleTimeString()}
+                    </div>
+                    <div className={`text-xs px-2 py-1 rounded-full mt-1 ${
+                      activity.status === 'success' ? 'bg-green-100 text-green-800' :
+                      activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {activity.status}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        
+        <div className="mt-4 text-center">
+          <button className="text-blue-600 hover:text-blue-800 font-medium">
+            View All Activities
+          </button>
         </div>
       </div>
     </div>

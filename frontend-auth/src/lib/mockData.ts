@@ -207,6 +207,146 @@ export const systemStatusData = [
   { name: 'Payment Gateway', status: 'online' as const, uptime: 99.92 },
 ];
 
+// Bus Trip Mock Data
+export interface BusTrip {
+  id: string;
+  from: string;
+  to: string;
+  departure: string;
+  arrival: string;
+  duration: string;
+  price: number;
+  busType: 'Standard' | 'VIP' | 'Sleeper';
+  company: string;
+  availableSeats: number;
+  totalSeats: number;
+  amenities: string[];
+  rating: number;
+}
+
+export const mockBusTrips: BusTrip[] = [
+  {
+    id: '1',
+    from: 'Ho Chi Minh',
+    to: 'Da Nang',
+    departure: '08:00',
+    arrival: '20:00',
+    duration: '12h 00m',
+    price: 25.00,
+    busType: 'VIP',
+    company: 'Phuong Trang',
+    availableSeats: 12,
+    totalSeats: 45,
+    amenities: ['WiFi', 'AC', 'Reclining Seats', 'Snacks'],
+    rating: 4.5
+  },
+  {
+    id: '2',
+    from: 'Ho Chi Minh',
+    to: 'Da Nang',
+    departure: '09:30',
+    arrival: '21:30',
+    duration: '12h 00m',
+    price: 22.50,
+    busType: 'Standard',
+    company: 'Mai Linh Express',
+    availableSeats: 8,
+    totalSeats: 40,
+    amenities: ['AC', 'Reclining Seats'],
+    rating: 4.2
+  },
+  {
+    id: '3',
+    from: 'Ho Chi Minh',
+    to: 'Da Nang',
+    departure: '22:00',
+    arrival: '08:00',
+    duration: '10h 00m',
+    price: 35.00,
+    busType: 'Sleeper',
+    company: 'Sinh Tourist',
+    availableSeats: 6,
+    totalSeats: 36,
+    amenities: ['WiFi', 'AC', 'Sleeper Beds', 'Blanket', 'Water'],
+    rating: 4.7
+  },
+  {
+    id: '4',
+    from: 'Hanoi',
+    to: 'Hai Phong',
+    departure: '07:00',
+    arrival: '09:30',
+    duration: '2h 30m',
+    price: 8.00,
+    busType: 'Standard',
+    company: 'Hoang Long',
+    availableSeats: 15,
+    totalSeats: 35,
+    amenities: ['AC'],
+    rating: 4.0
+  },
+  {
+    id: '5',
+    from: 'Hanoi',
+    to: 'Hai Phong',
+    departure: '14:00',
+    arrival: '16:30',
+    duration: '2h 30m',
+    price: 10.00,
+    busType: 'VIP',
+    company: 'Kumho Samco',
+    availableSeats: 20,
+    totalSeats: 28,
+    amenities: ['WiFi', 'AC', 'Reclining Seats', 'USB Charging'],
+    rating: 4.3
+  },
+  {
+    id: '6',
+    from: 'Da Nang',
+    to: 'Hue',
+    departure: '10:00',
+    arrival: '13:00',
+    duration: '3h 00m',
+    price: 12.00,
+    busType: 'Standard',
+    company: 'ANT Bus',
+    availableSeats: 25,
+    totalSeats: 40,
+    amenities: ['AC', 'Water'],
+    rating: 4.1
+  },
+  {
+    id: '7',
+    from: 'Da Nang',
+    to: 'Hue',
+    departure: '16:00',
+    arrival: '19:00',
+    duration: '3h 00m',
+    price: 15.00,
+    busType: 'VIP',
+    company: 'Phuong Trang',
+    availableSeats: 10,
+    totalSeats: 30,
+    amenities: ['WiFi', 'AC', 'Reclining Seats', 'Snacks'],
+    rating: 4.6
+  },
+  {
+    id: '8',
+    from: 'Ho Chi Minh',
+    to: 'Nha Trang',
+    departure: '23:00',
+    arrival: '07:00',
+    duration: '8h 00m',
+    price: 28.00,
+    busType: 'Sleeper',
+    company: 'Queen Cafe',
+    availableSeats: 4,
+    totalSeats: 32,
+    amenities: ['WiFi', 'AC', 'Sleeper Beds', 'Blanket', 'Water', 'Pillow'],
+    rating: 4.8
+  }
+];
+
 // Get summary cards based on role
 export const getSummaryCardsByRole = (role: UserRole): SummaryCard[] => {
   switch (role) {
